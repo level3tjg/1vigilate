@@ -1,0 +1,10 @@
+Package: com.level3tjg.1vigilate
+Name: 1vigilate
+Depends: mobilesubstrate
+Conflicts: com.tonyk7.0vigilate
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Make Palert work on iOS 11 - 13
+Maintainer: level3tjg
+Author: level3tjg
+Section: Tweaks
