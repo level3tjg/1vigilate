@@ -1,6 +1,7 @@
 #import <dlfcn.h>
 #import <substrate.h>
 #import <objc/runtime.h>
+#import "fishhook/fishhook.c"
 
 bool shouldSpoof;
 NSDictionary *prefs;
@@ -15,19 +16,34 @@ NSDictionary *prefs;
 
 IvarHook *ivarHook;
 
-%group iOS13Hooks
-
-%hookf(Ivar, class_getInstanceVariable, Class _class, const char *name){
+Ivar hook_class_getInstanceVariable(Class _class, const char *name){
+	Ivar (*orig_class_getInstanceVariable)(Class _class, const char *name) = (Ivar
+      (*)(__unsafe_unretained Class, const char *))dlsym(RTLD_DEFAULT, "class_getInstanceVariable");
 	if([_class isEqual:NSClassFromString(@"_UIAlertControllerView")] && [@(name) isEqualToString:@"_inPopover"])
-		return %orig([ivarHook class], "_inPopover");
-	return %orig();
+		_class = [ivarHook class];
+	return orig_class_getInstanceVariable(_class, name);
 }
+
+%group iOS13Hooks
 
 %hookf(Class, NSClassFromString, NSString *_class){
 	if([_class isEqualToString:@"_UIInterfaceActionItemSeparatorView_iOS"])
 		return %orig(@"_UIInterfaceActionVibrantSeparatorView");
 	return %orig();
 }
+
+%hook UIAlertController
+-(void)viewDidLayoutSubviews{
+	const char *function = "class_getInstanceVariable";
+    void *original = dlsym(RTLD_DEFAULT, function);
+    struct rebinding binding = {function, (void *)hook_class_getInstanceVariable};
+    struct rebinding bindings[] = {binding};
+    rebind_symbols(bindings, 1);
+    %orig;
+    binding.replacement = original;
+    rebind_symbols(bindings, 1);
+}
+%end
 
 %hook _UIAlertControllerView
 -(void)setPresentedAsPopover:(BOOL)arg1{
