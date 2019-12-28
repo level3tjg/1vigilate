@@ -70,16 +70,6 @@ NSString *hook_systemVersion(id self, SEL _cmd){
 	return (*orig_systemVersion)(self, _cmd);
 }
 
-bool (*orig_eclipseEnabled)();
-bool hook_eclipseEnabled(){
-	if(@available(iOS 13, *)){
-		if([[UITraitCollection currentTraitCollection] userInterfaceStyle] == 2)
-			return true;
-		return false;
-	}
-	return (*orig_eclipseEnabled)();
-}
-
 __attribute__((constructor))
 static void init(){
 	prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.integeritis.palert.plist"];
@@ -87,7 +77,6 @@ static void init(){
 	if(@available(iOS 13, *)){
 		%init(iOS13Hooks)
 		ivarHook = [[IvarHook alloc] init];
-		MSHookFunction((void *)MSFindSymbol(MSGetImageByName("/Library/MobileSubstrate/DynamicLibraries/Palert.dylib"), "__Z14eclipseEnabledv"), (void *)hook_eclipseEnabled, (void **)&orig_eclipseEnabled);
 	}
 	shouldSpoof = TRUE;
 	dlopen("/Library/MobileSubstrate/DynamicLibraries/Palert.dylib", 1);
